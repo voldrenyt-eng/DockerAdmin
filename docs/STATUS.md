@@ -1,0 +1,725 @@
+# DockerAdmin — Status
+
+## 1) Зараз у роботі
+**Current focus:** `Post-roadmap checkpoint / next scope selection`
+
+**Owner:** `n/a`  
+**Branch:** `n/a`  
+**Last updated:** `2026-03-25 15:18 EET`
+
+### Scope of current task
+- roadmap batches through `E12-3` are complete
+- post-roadmap audit UX in web now includes server-backed search/filter pagination with numbered pages, a URL-backed detail drawer, and guarded CSV export
+- post-roadmap release automation now includes a manual default-branch GitHub Actions workflow for version sync, git tagging, versioned GHCR image publishing for `api` and `web`, a runtime compose path that consumes published `api` and `web` images, an optional SSH rollout gate for the DockerAdmin runtime, and draft GitHub Releases
+- наступний scope still needs explicit selection outside the current `docs/mvp/ISSUES.md`
+- найближчий candidate follow-up is not pinned yet beyond deploy-linked release automation
+
+---
+
+## 2) Done
+### Completed recently
+- [x] `E0-1` / monorepo scaffold (`pnpm` + `turbo` + strict TypeScript)
+- [x] placeholder `apps/api` на Fastify
+- [x] placeholder `apps/web` на React + Vite
+- [x] baseline `packages/shared`
+- [x] design note: `docs/plans/2026-03-18-e0-1-monorepo-scaffold-design.md`
+- [x] `E0-2` / Docker platform compose + local app image packaging
+- [x] Docker stack names corrected to `dockeradmin-*`
+- [x] Docker daemon DNS fixed for Docker Hub base image pulls
+- [x] design note: `docs/plans/2026-03-18-e0-2-docker-packaging-design.md`
+- [x] `E0-4` / API env bootstrap with fail-fast validation
+- [x] design note: `docs/plans/2026-03-18-e0-4-env-bootstrap-design.md`
+- [x] `E1-1` / shared DTO baseline in `packages/shared`
+- [x] minimal API contract routes validated through shared DTOs
+- [x] design note: `docs/plans/2026-03-18-e1-1-shared-dto-design.md`
+- [x] `E1-2` / standard API error contract
+- [x] shared canonical error codes + status mapping
+- [x] Fastify global error formatter for `401/403/404/409/422/500`
+- [x] web imports the same shared error contract parser without local error shape
+- [x] design note: `docs/plans/2026-03-18-e1-2-standard-error-contract-design.md`
+- [x] `E2-1` / Prisma schema + migrations
+- [x] required MVP Prisma models added: `User`, `RefreshToken`, `Project`, `Deployment`, `Domain`, `AuditLog`
+- [x] initial committed migration added under `apps/api/prisma/migrations`
+- [x] root commands added for `pnpm db:generate` and `pnpm db:migrate`
+- [x] design note: `docs/plans/2026-03-19-e2-1-prisma-schema-migrations-design.md`
+- [x] `E2-2` / seed admin user
+- [x] root and API commands added for `pnpm db:seed`
+- [x] admin seed is idempotent for the same email
+- [x] password hashing uses Node `crypto.scrypt`
+- [x] design note: `docs/plans/2026-03-19-e2-2-seed-admin-design.md`
+- [x] `E2-3` / auth endpoints (`login/refresh/logout/me`)
+- [x] access token works through `Authorization: Bearer`
+- [x] refresh token rotates and old token becomes invalid
+- [x] logout revokes the current refresh token
+- [x] `GET /api/me` returns the current admin user for a valid access token
+- [x] `E2-4` acceptance is now satisfied within the `E2-3` implementation
+- [x] refresh tokens are stored hashed in PostgreSQL and checked for revoke/expiry
+- [x] external `/api/*` routing now stays stable through Traefik without prefix stripping
+- [x] design note: `docs/plans/2026-03-19-e2-3-auth-endpoints-design.md`
+- [x] `E2-5` / minimal auth guard
+- [x] reusable Fastify preHandler guard added for protected runtime routes
+- [x] request context now carries `currentUser` after auth
+- [x] `GET /api/me` now goes through the shared auth guard
+- [x] missing bearer token returns standardized `401 UNAUTHORIZED`
+- [x] design note: `docs/plans/2026-03-19-e2-5-minimal-auth-guard-design.md`
+- [x] `E3-1` / projects CRUD (metadata)
+- [x] guarded endpoints added for `POST /api/projects`, `GET /api/projects`, `GET /api/projects/:id`, `PATCH /api/projects/:id`
+- [x] shared project contracts now include create/update/list DTOs and normalized `name` validation
+- [x] project slug is generated on create with numeric suffix collision handling and stays stable on rename
+- [x] Docker smoke now confirms `login -> create project -> list projects` through the rebuilt stack
+- [x] design note: `docs/plans/2026-03-19-e3-1-projects-crud-design.md`
+- [x] `E0-3` / runtime storage layout
+- [x] API config now supports `DATA_ROOT` with local default `data`
+- [x] shared runtime helpers added for `data/projects/{id}` with path traversal guard
+- [x] `POST /api/projects` now creates `project root + src + repo + deploy`
+- [x] Docker stack now persists project runtime data in `runtime-data` mounted at `/app/data`
+- [x] design note: `docs/plans/2026-03-19-e0-3-runtime-storage-layout-design.md`
+- [x] `E3-2` / project slug / runtime identity
+- [x] shared DTO now exposes a canonical `ProjectSlugSchema`
+- [x] slug generation is centralized in one API module instead of local service helpers
+- [x] project slug contract is now explicit, compose-safe, unique, and stable on rename
+- [x] Docker smoke confirmed generated project slugs stay runtime-safe while runtime layout still initializes correctly
+- [x] design note: `docs/plans/2026-03-19-e3-2-project-slug-runtime-identity-design.md`
+- [x] `E3-3` / ZIP upload + safe extract
+- [x] guarded `POST /api/projects/:id/source/zip` now accepts raw ZIP bodies
+- [x] safe ZIP archives extract into `data/projects/{id}/src`
+- [x] path traversal, symlink, special files, max upload size, and max extracted size are enforced with readable standardized errors
+- [x] Docker smoke confirmed live ZIP upload through Traefik and runtime files inside `/app/data/projects/<id>/src`
+- [x] design note: `docs/plans/2026-03-19-e3-3-zip-upload-safe-extract-design.md`
+- [x] `E3-4` / public Git clone
+- [x] guarded `POST /api/projects/:id/source/git` now accepts public `https://` repository URLs and optional `branch`
+- [x] Git clone runs as `--depth 1` without submodules and uses the remote default branch when `branch` is omitted
+- [x] repositories clone into `data/projects/{id}/repo`
+- [x] timeout, git runtime missing, and clone failures return readable standardized errors
+- [x] Docker smoke confirmed live Git clone through Traefik and runtime files inside `/app/data/projects/<id>/repo`
+- [x] design note: `docs/plans/2026-03-19-e3-4-public-git-clone-design.md`
+- [x] `E3-5` / source workspace replace policy
+- [x] repeated ZIP upload now atomically replaces the previous `src/` workspace
+- [x] repeated Git clone now atomically replaces the previous `repo/` workspace
+- [x] failed extract/clone keeps the previous working workspace intact and cleans project-local temp directories
+- [x] Docker smoke confirmed repeated ZIP upload removes old files and repeated Git clone removes a synthetic repo marker inside `/app/data/projects/<id>`
+- [x] design note: `docs/plans/2026-03-19-e3-5-source-workspace-replace-policy-design.md`
+- [x] `E3-6` / env store (encrypt at rest)
+- [x] guarded `PUT /api/projects/:id/env` now accepts JSON `{ content }`
+- [x] env content is validated as minimal `.env`, encrypted at rest into `data/projects/{id}/env.enc`, and never written as plaintext `.env`
+- [x] Docker smoke confirmed `env.enc` exists inside `/app/data/projects/<id>` without plaintext secret values
+- [x] design note: `docs/plans/2026-03-19-e3-6-env-store-design.md`
+- [x] `E3-7` / env read policy
+- [x] guarded `GET /api/projects/:id/env` now returns the original decrypted content to `ADMIN` only
+- [x] missing `env.enc` returns standardized `404`, and corrupted payloads return standardized `500` without leaking secrets
+- [x] Docker smoke confirmed `PUT /env -> GET /env` round-trips the same content through the rebuilt stack
+- [x] design note: `docs/plans/2026-03-19-e3-7-env-read-policy-design.md`
+- [x] `E4-1` / compose validation (presence + parse)
+- [x] deploy-prep helper now resolves the active working source from `project.sourceType`
+- [x] supported root compose filenames are fixed to `docker-compose.yml|docker-compose.yaml|compose.yml|compose.yaml`
+- [x] missing or ambiguous root compose files now return readable standardized validation errors
+- [x] design note: `docs/plans/2026-03-19-e4-1-compose-validation-design.md`
+- [x] `E4-2` / deploy preflight checks
+- [x] standalone preflight service now loads the project, asserts working source presence, reuses compose resolution, checks Docker daemon availability, and verifies env decrypt readiness
+- [x] preflight returns normalized context with `projectSlug`, `workingDir`, `composeFilePath`, and `hasEncryptedEnv`
+- [x] missing working source now returns standardized `404`, while Docker daemon failures return a controlled `500`
+- [x] design note: `docs/plans/2026-03-19-e4-2-deploy-preflight-design.md`
+- [x] `E4-3` / deploy endpoint (recreate)
+- [x] guarded `POST /api/projects/:id/deploy` now reuses preflight, persists a `Deployment` record, and executes `docker compose -p <slug> up -d --build`
+- [x] deploy writes `stdout/stderr` into `data/projects/{id}/deploy/last-deploy.log` with secret redaction
+- [x] Docker runtime now includes Docker CLI inside `api` and mounts `/var/run/docker.sock` for real deploy execution
+- [x] live Docker smoke confirmed `login -> create project -> put env -> upload zip -> deploy`, successful runtime container startup, env injection into the deployed container, and no secret leak in `last-deploy.log`
+- [x] design note: `docs/plans/2026-03-19-e4-3-deploy-endpoint-design.md`
+- [x] `E4-4` / deploy locking
+- [x] only one deploy per project can run at a time, and a concurrent second request now returns standardized `409 CONFLICT`
+- [x] project lock is released after both `SUCCESS` and `FAILED`, allowing the next deploy to start
+- [x] live Docker smoke confirmed a slow first deploy returns `SUCCESS` while the second concurrent deploy for the same project returns `409 CONFLICT`
+- [x] design note: `docs/plans/2026-03-19-e4-4-deploy-locking-design.md`
+- [x] `E4-5` / deploy timeout handling
+- [x] API config now supports `DEPLOY_TIMEOUT_MS` with a default of `300000`
+- [x] timed-out deploy processes are terminated, marked `FAILED`, and preserve partial command output in `last-deploy.log`
+- [x] timeout still releases the per-project deploy lock so the next deploy can start cleanly
+- [x] design note: `docs/plans/2026-03-19-e4-5-deploy-timeout-handling-design.md`
+- [x] `E4-6` / deployments list/history
+- [x] guarded `GET /api/projects/:id/deployments` now returns project deployment history to `ADMIN`
+- [x] deployment history reuses the existing `DeploymentDto` contract and returns newest-first by `startedAt`
+- [x] existing projects with no deploys now return `[]`, while missing projects return standardized `404`
+- [x] design note: `docs/plans/2026-03-19-e4-6-deployments-list-history-design.md`
+- [x] `E4-7` / deploy audit integration
+- [x] deploy start and finish now write `DEPLOY_START` / `DEPLOY_FINISH` entries into `AuditLog`
+- [x] audit messages use safe high-level outcomes only and do not leak deploy output, exceptions, env content, or secrets
+- [x] audit persistence is best-effort and does not change deploy success or failure semantics
+- [x] design note: `docs/plans/2026-03-19-e4-7-deploy-audit-integration-design.md`
+- [x] `E5-1` / list services for a project
+- [x] guarded `GET /api/projects/:id/services` now returns project runtime services to `ADMIN`
+- [x] service inventory is resolved live from Docker through `project.slug` and normalized into the existing `ServiceDto` contract
+- [x] empty runtimes return `[]`, missing projects return standardized `404`, and Docker lookup failures stay behind safe standardized `500`
+- [x] design note: `docs/plans/2026-03-19-e5-1-list-services-for-project-design.md`
+- [x] `E5-2` / service identity mapping
+- [x] internal opaque `serviceId` helpers now encode/decode `projectId + serviceName` without exposing raw container ids
+- [x] service action target resolution now verifies the decoded service against the live runtime resolved by `project.slug`
+- [x] mismatched, malformed, or absent runtime services are rejected before any future action endpoint can run Docker commands
+- [x] design note: `docs/plans/2026-03-19-e5-2-service-identity-mapping-design.md`
+- [x] `E5-3` / service action endpoint
+- [x] guarded `POST /api/services/:serviceId/action` now supports `start|stop|restart`
+- [x] service list and action responses now include opaque `serviceId` values so callers can invoke verified actions without raw container ids
+- [x] service actions relist runtime after the Docker command and write safe best-effort `SERVICE_ACTION` audit records
+- [x] design note: `docs/plans/2026-03-20-e5-3-service-action-endpoint-design.md`
+- [x] `E6-1` / logs HTTP fallback
+- [x] guarded `GET /api/projects/:id/logs?serviceName=&tail=` now returns `{ serviceName, tail, lines }`
+- [x] `serviceName` is verified against the requested project runtime before Docker logs are read
+- [x] omitted `tail` now defaults to `200`, while Docker log lookup failures stay behind safe standardized `500`
+- [x] design note: `docs/plans/2026-03-20-e6-1-logs-http-fallback-design.md`
+- [x] `E6-2` / WS logs stream
+- [x] guarded `WS /api/ws/logs?projectId=&serviceName=&tail=&accessToken=` now sends one snapshot frame first and then follows live Docker logs for the verified project service
+- [x] the WS stream reuses the existing project runtime verification path, rejects unauthorized or malformed handshakes before upgrade, and stops the Docker follower on disconnect
+- [x] design note: `docs/plans/2026-03-20-e6-2-ws-logs-stream-design.md`
+- [x] `E6-3` / WS auth + stream safety
+- [x] the WS logs stream now rejects invalid access tokens before upgrade, bounds queued outbound frames, and closes overloaded streams with one safe error frame instead of growing memory without limit
+- [x] active upgraded log sockets are now destroyed during Fastify `preClose`, so disconnect and app shutdown both stop the live Docker follower cleanly
+- [x] design note: `docs/plans/2026-03-20-e6-3-ws-auth-stream-safety-design.md`
+- [x] `E7-1` / Metrics endpoint
+- [x] guarded `GET /api/metrics?projectId=` now returns the shared metrics DTO list for the requested project runtime
+- [x] runtime metrics reuse `project.slug`, parse `docker stats` output into numeric values, and zero-fill stopped or individually failing services instead of failing the whole endpoint
+- [x] design note: `docs/plans/2026-03-20-e7-1-metrics-endpoint-design.md`
+- [x] `E7-2` / Metrics normalization
+- [x] `GET /api/metrics?projectId=` now returns a stable `MetricsDto[]` order sorted by `serviceName`
+- [x] `cpuPercent` is rounded to 2 decimals, while memory/network values are normalized to non-negative integer byte counts
+- [x] design note: `docs/plans/2026-03-20-e7-2-metrics-normalization-design.md`
+- [x] `E7-3` / Web polling for metrics
+- [x] placeholder web now includes a live metrics card with local `projectId` + `accessToken` inputs stored in browser storage
+- [x] frontend polls the guarded metrics endpoint roughly every 5 seconds, shows loading/error state, and stops polling on unmount
+- [x] design note: `docs/plans/2026-03-20-e7-3-web-polling-for-metrics-design.md`
+- [x] `E8-1` / Domains CRUD
+- [x] guarded `POST /api/domains`, `GET /api/domains`, and `DELETE /api/domains/:id` now persist and expose domain bindings through the existing admin auth guard
+- [x] create requires an existing project, list returns a bare `DomainDto[]`, and delete returns `204` or standardized `404` when the binding is absent
+- [x] design note: `docs/plans/2026-03-20-e8-1-domains-crud-design.md`
+- [x] `E8-2` / Domain validation & collision checks
+- [x] domain host is now normalized as a valid FQDN, `port` is constrained to `1..65535`, duplicate hosts return standardized `409`, and bindings to missing runtime services return standardized `404`
+- [x] service existence is verified against the live project runtime resolved through `project.slug`
+- [x] design note: `docs/plans/2026-03-20-e8-2-domain-validation-collision-checks-design.md`
+- [x] `E8-3` / Generate Traefik routes.yml from DB
+- [x] successful domain create/delete now regenerate `infra/traefik/dynamic/routes.yml` from the full DB snapshot through temp file + atomic rename
+- [x] generated domain routers currently target `http://host.docker.internal:<port>`, and the dynamic Traefik directory is now bind-mounted into both `traefik` and `api`
+- [x] design note: `docs/plans/2026-03-20-e8-3-generate-traefik-routes-from-db-design.md`
+- [x] `E8-4` / SSL resolver wiring (Traefik)
+- [x] Traefik static startup now enables ACME `http-01`, initializes `acme.json` storage on a named volume, and uses `TRAEFIK_ACME_STAGING=true` as the default DEV path
+- [x] generated domain routers now add `tls.certResolver: letsencrypt` only when `tlsEnabled=true`
+- [x] design note: `docs/plans/2026-03-20-e8-4-ssl-resolver-wiring-design.md`
+- [x] `E9-1` / Telegram notifier service
+- [x] API now has a standalone Telegram notifier service that consumes the existing optional `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` config
+- [x] notifier send attempts are best-effort and return `sent|disabled|failed` without throwing transport failures back to callers
+- [x] design note: `docs/plans/2026-03-20-e9-1-telegram-notifier-service-design.md`
+- [x] `E9-2` / Deploy success/fail notifications
+- [x] deploy now sends one plain Telegram `SUCCESS|FAILED` notification after the final persisted deploy result is known
+- [x] notifier-disabled or delivery-failed paths only emit safe warnings and never change the deploy response
+- [x] design note: `docs/plans/2026-03-20-e9-2-deploy-success-fail-notifications-design.md`
+- [x] web i18n baseline with modular locale catalogs
+- [x] locales added under `apps/web/src/lang/en`, `apps/web/src/lang/uk`, `apps/web/src/lang/ru`
+- [x] settings UI can switch interface language and persist it in `localStorage`
+- [x] design note: `docs/plans/2026-03-19-web-i18n-modular-design.md`
+- [x] `E10-1` / Login page + token handling
+- [x] `apps/web` now renders a localized login screen until an auth session exists, instead of requiring manual token input before any guarded call
+- [x] login posts to the existing `/api/auth/login`, stores the shared `AuthDto` in `localStorage`, and reuses that session across re-renders
+- [x] guarded metrics polling now refreshes the access token after a `401`, replaces the stored session on success, and returns to login only when refresh fails
+- [x] logout is best-effort against `/api/auth/logout` and still clears the local auth session without requiring a manual browser storage reset
+- [x] design note: `docs/plans/2026-03-23-e10-1-login-page-token-handling-design.md`
+- [x] `E10-2` / Protected routes + session restore
+- [x] `apps/web` now uses real URL routing with public `/login`, protected `/`, and auth-aware fallback redirects for unknown routes
+- [x] login success now navigates into `/`, while logout and refresh failure both clear the local session and navigate back to `/login`
+- [x] session restore remains local-storage-first, so reload on `/` keeps the MVP dashboard available without bouncing through login
+- [x] design note: `docs/plans/2026-03-23-e10-2-protected-routes-session-restore-design.md`
+- [x] `E10-3` / Projects list + create project (zip/git)
+- [x] `apps/web` now has a protected `/projects` page with guarded project list loading, localized empty/loading/error states, and a `Create Project` side panel
+- [x] the create flow now covers both metadata creation and the required second-step source intake for ZIP upload and public Git URL
+- [x] projects API helpers reuse the same refresh-on-`401` pattern as metrics, and the rebuilt Docker stack stayed healthy after the frontend changes
+- [x] design note: `docs/plans/2026-03-23-e10-3-projects-list-create-design.md`
+- [x] `E10-4` / Project detail shell
+- [x] `apps/web` now exposes nested protected project detail routes under `/projects/:projectId/:tab` with a default redirect to `services`
+- [x] the detail page now loads guarded `GET /api/projects/:id`, shows project identity in the header, and provides stable tab URLs for `Services|Logs|Domains|Deployments|Env`
+- [x] the projects list now links into the detail route, while tab bodies stay intentionally shell-only for the next frontend slices
+- [x] design note: `docs/plans/2026-03-23-e10-4-project-detail-shell-design.md`
+- [x] `E10-5` / Project env editor
+- [x] the `Env` tab now loads guarded `GET /api/projects/:id/env`, treats the standardized missing-env `404` as a blank editor state, and keeps the editor inside the existing detail route
+- [x] env save now calls guarded `PUT /api/projects/:id/env` with explicit loading, success, and error states, without printing env content into console-oriented debug flows
+- [x] projects helpers now cover env read/write alongside project metadata and source intake contracts
+- [x] design note: `docs/plans/2026-03-23-e10-5-project-env-editor-design.md`
+- [x] `E10-6` / Deploy panel + status
+- [x] the `Deployments` tab now loads guarded `GET /api/projects/:id/deployments`, shows the latest deploy status, renders a compact newest-first recent history, and keeps the workflow inside the existing detail route
+- [x] manual deploy now calls guarded `POST /api/projects/:id/deploy`, disables repeat clicks while the request is active or the latest known deployment is still `RUNNING`, and refreshes history after completion
+- [x] web helpers and i18n now cover deployment list/trigger flows plus shared status/trigger labels for `RUNNING|SUCCESS|FAILED`
+- [x] design note: `docs/plans/2026-03-23-e10-6-deploy-panel-status-design.md`
+- [x] `E10-7` / Services + Logs + Domains tabs
+- [x] the `Services` tab now loads guarded `GET /api/projects/:id/services`, renders live runtime rows, and applies row-level `start|stop|restart` actions through the existing service action endpoint
+- [x] the `Logs` tab now reuses the current runtime service inventory, loads one guarded HTTP snapshot, and appends live websocket log frames for the selected service inside the existing detail route
+- [x] the `Domains` tab now loads guarded `GET /api/domains`, filters bindings to the current project, and supports guarded create/delete flows with localized empty/loading/error states
+- [x] design note: `docs/plans/2026-03-23-e10-7-services-logs-domains-tabs-design.md`
+- [x] `E11-1` / AuditLog for sensitive actions
+- [x] auth now writes safe best-effort audit records for `login success|fail` and `logout` without persisting passwords, tokens, hashes, or emails in audit messages
+- [x] project/source/env/domain flows now write safe best-effort audit records for create/update/upload/clone/env update/domain create/delete while preserving existing deploy and service-action audit behavior
+- [x] Docker-rebuilt backend health stayed green after the audit coverage expansion
+- [x] design note: `docs/plans/2026-03-23-e11-1-auditlog-sensitive-actions-design.md`
+- [x] `E11-2` / Audit API
+- [x] guarded `GET /api/audit?limit=` now returns shared audit DTOs for `ADMIN` only with default/max `limit` control
+- [x] audit read path now uses newest-first ordering with deterministic `id desc` tie-breaker and keeps Prisma `Date` mapping inside a dedicated audit service
+- [x] shared contract now includes `AuditAction`, `AuditLog`, and `AuditLogListResponse` schemas for future web/API reuse
+- [x] design note: `docs/plans/2026-03-23-e11-2-audit-api-design.md`
+- [x] `E11-3` / Security headers + CORS baseline
+- [x] every API HTTP response now carries baseline security headers through one centralized Fastify hook
+- [x] CORS now allows only the configured `WEB_ORIGIN`, supports browser preflight, and keeps same-origin Docker/Traefik access unchanged
+- [x] `WEB_ORIGIN` is now documented and wired through API config, compose env, and `.env.example`
+- [x] design note: `docs/plans/2026-03-23-e11-3-security-headers-cors-baseline-design.md`
+- [x] `E11-4` / Input and upload limits
+- [x] Fastify now enforces a `1 MiB` default body limit for regular request bodies, while raw ZIP upload keeps its dedicated `10 MiB` route limit
+- [x] oversized generic bodies now return a standardized `422`, while oversized ZIP uploads keep the existing ZIP-specific validation message
+- [x] design note: `docs/plans/2026-03-23-e11-4-input-upload-limits-design.md`
+- [x] `E12-1` / GitHub Actions: lint/typecheck/test
+- [x] `.github/workflows/ci.yml` now runs on `pull_request` with `Node 24` and `pnpm 10.6.0`
+- [x] the CI job now installs workspace dependencies, runs root `lint` and `typecheck`, and executes package tests for `shared`, `api`, and `web`
+- [x] design note: `docs/plans/2026-03-23-e12-1-github-actions-lint-typecheck-test-design.md`
+- [x] `E12-2` / Build validation
+- [x] the existing PR workflow now has a separate `build` job after `checks`, so CI reports build failures independently from lint/typecheck/test failures
+- [x] build validation runs through root `pnpm build`, which covers the workspace packages including `api` and `web`
+- [x] design note: `docs/plans/2026-03-23-e12-2-build-validation-design.md`
+- [x] `E12-3` / Infra / compose smoke
+- [x] the PR workflow now has a separate `infra-smoke` job after `build`, bootstraps `.env` from `.env.example`, and runs compose + Prisma smoke commands in CI
+- [x] root `db:validate` was added so Prisma schema validation has an explicit CI and local entrypoint alongside `db:generate` and `db:migrate`
+- [x] design note: `docs/plans/2026-03-23-e12-3-infra-compose-smoke-design.md`
+- [x] post-roadmap / Audit UX in web
+- [x] web now exposes a protected `/audit` page in the main sidebar and reads the existing guarded `GET /api/audit?limit=` endpoint through a dedicated helper with refresh-on-401 behavior
+- [x] the audit page stays read-only and shows newest-first records with loading, empty, and error states in all supported locales
+- [x] design note: `docs/plans/2026-03-23-post-roadmap-audit-ux-web-design.md`
+- [x] post-roadmap / Audit filters + search in web
+- [x] the audit page now supports local search across action, entity, project, and message plus exact `action` and `entityType` filters
+- [x] audit filter state now persists in the `/audit` URL query, and filtering stays client-side on top of the existing guarded latest-50 snapshot
+- [x] design note: `docs/plans/2026-03-24-post-roadmap-audit-filters-search-design.md`
+- [x] post-roadmap / Audit detail drawer in web
+- [x] the audit page now opens a right-side record drawer from visible rows and keeps the selected audit id in the `/audit` URL query
+- [x] drawer content stays read-only, reuses the already loaded latest-50 snapshot, and closes automatically when the selected row is no longer visible in the filtered list
+- [x] design note: `docs/plans/2026-03-24-post-roadmap-audit-detail-drawer-design.md`
+- [x] post-roadmap / Audit pagination in API and web
+- [x] backend `GET /api/audit` now supports `page/pageSize/q/action/entityType`, returns shared paginated metadata, and keeps newest-first ordering with stable page normalization
+- [x] web `/audit` now uses server-backed search/filter pagination with numbered controls, URL-persisted page state, total match count, range summary, and page-scoped drawer selection
+- [x] design note: `docs/plans/2026-03-25-post-roadmap-audit-pagination-design.md`
+- [x] post-roadmap / Audit CSV export in API and web
+- [x] backend `GET /api/audit/export` now exports all rows matching current `q/action/entityType` filters as guarded newest-first CSV with a download filename
+- [x] web `/audit` now exposes an `Export CSV` action that reuses the current server-side filters/search and downloads the full matching audit history
+- [x] design note: `docs/plans/2026-03-25-post-roadmap-audit-export-design.md`
+- [x] post-roadmap / Release automation
+- [x] `.github/workflows/release.yml` now exposes a default-branch-only `workflow_dispatch` release flow that reruns verification gates, syncs workspace versions, creates a release commit and tag, and opens a draft GitHub Release
+- [x] `scripts/release-version.mjs` now validates strict semver input and synchronizes `version` across root, `apps/api`, `apps/web`, and `packages/shared`
+- [x] design note: `docs/plans/2026-03-25-post-roadmap-release-automation-design.md`
+- [x] post-roadmap / GHCR image publishing
+- [x] `.github/workflows/release.yml` now logs into GHCR with `GITHUB_TOKEN`, builds `api` and `web` images from the existing Dockerfiles, and publishes immutable `vX.Y.Z` image tags before pushing the release commit and tag
+- [x] `scripts/release-images.mjs` now normalizes the repository owner to lower-case and constructs canonical `ghcr.io/<owner>/dockeradmin-api|web:vX.Y.Z` image refs
+- [x] design note: `docs/plans/2026-03-25-post-roadmap-ghcr-publish-design.md`
+- [x] post-roadmap / Runtime consume GHCR images
+- [x] `infra/docker-compose.runtime.yml` now defines a runtime-oriented DockerAdmin stack that consumes explicit `ghcr.io/<owner>/dockeradmin-api|web:vX.Y.Z` images for `api` and `web`, while keeping the existing build-based dev compose unchanged
+- [x] root scripts now expose `docker:runtime:config`, `docker:runtime:up`, and `docker:runtime:down`, and `.env.example` now documents `GHCR_OWNER` plus `IMAGE_TAG`
+- [x] design note: `docs/plans/2026-03-25-post-roadmap-runtime-consume-ghcr-images-design.md`
+- [x] post-roadmap / Deploy-linked release automation
+- [x] `.github/workflows/release.yml` now exposes an explicit `deploy_runtime` gate, separates `release`, `deploy_runtime`, and `draft_release` jobs, and delays draft GitHub Release creation until the SSH rollout path succeeds when deploy is requested
+- [x] the gated SSH rollout now uses pinned `known_hosts`, checks out `vX.Y.Z` on the target server, and runs `infra/docker-compose.runtime.yml` through `config -> pull api web -> up -d` without mutating the server `.env`
+- [x] design note: `docs/plans/2026-03-25-post-roadmap-deploy-linked-release-automation-design.md`
+
+### Verified
+- [x] `lint`
+- [x] `typecheck`
+- [x] `test`
+- [x] `build`
+- [x] `docker:platform:config`
+- [x] `db:validate`
+- [x] `db:generate`
+- [x] `db:migrate`
+- [x] `docker:platform:up`
+- [x] `/api/health`
+- [x] `:8080/api/health`
+- [x] docs updated
+
+---
+
+## 3) Next
+### Immediate next steps
+1. define the next post-roadmap batch beyond deploy-linked release automation
+
+### Planned near-term sequence
+- `next batch not selected yet`
+
+---
+
+## 4) Risks / blockers
+### Active risks
+- web auth now has route-level protection, but session restore is still local-storage-first and not yet validated through `/api/me` on boot
+- project detail runtime tabs are now wired, but browser-level smoke for the live websocket logs flow still has not been rerun here because Playwright Chromium remains blocked under root sandbox
+- auth runtime, project metadata CRUD, stable slug/runtime identity, runtime layout, ZIP/Git source intake, source replace policy, encrypted env storage/read, compose file resolution, deploy preflight, deploy execution, deploy locking, deploy timeout handling, deployment history, deploy audit logging, deploy-linked Telegram notifications, service listing, service identity mapping, service actions, validated domains CRUD, generated Traefik routes, ACME TLS resolver wiring, HTTP+WS logs, normalized metrics, basic web polling, backend audit list API, baseline HTTP security headers/CORS, input/upload limit hardening, PR CI with separate build plus infra smoke, an audit page with server-backed filters/search, numbered pagination, a detail drawer, full CSV export in web, and a manual GitHub release workflow with versioned GHCR publishing, runtime image consumption, and optional SSH rollout already exist, but live server-side rollout verification and rollback automation remain incomplete
+- web i18n baseline вже є, але поки без backend-synced user preferences
+
+### Open questions
+- чи залишаємо dashboard порт `18080` як безконфліктний default, чи повертаємо `8080` на чистому хості
+
+### Blockers
+- нема
+
+---
+
+## 5) Decisions taken
+### Accepted decisions
+- для `E0-1` обрано мінімальний runnable monorepo без auth/DB/Docker logic
+- архітектурні межі вирівняні одразу під `Fastify API` + `React SPA`
+- `apps/web` dev port зафіксовано на `5173`, `apps/api` placeholder слухає `3001`
+- для `E0-2` обрано один compose stack з локальною збіркою `api` і `web` образів
+- compose stack явно названий `dockeradmin`, щоб контейнері та image-и були видимі в `docker ps` і `docker images`
+- Traefik у bootstrap працює через `file provider`, а dashboard за замовчуванням прив’язаний до `127.0.0.1:18080`, щоб не конфліктувати з уже зайнятим `8080`
+- API startup тепер валідовує critical env через один `zod` schema module
+- порожні optional Telegram env значення нормалізуються до `undefined`, щоб Docker compose не валив API
+- Telegram notifier is now a standalone best-effort service that consumes the env-normalized bot token/chat id config, returns `sent|disabled|failed`, and never throws transport failures back to callers
+- deploy notifications now reuse that notifier only after the final persisted `SUCCESS|FAILED` result is known, and disabled/failed notification paths degrade to safe warnings instead of changing deploy outcomes
+- docker scripts явно використовують root `.env` через `--env-file .env`
+- `packages/shared` now holds the baseline Zod DTO set for API/Web contracts
+- API imports shared DTOs directly and validates narrow request/response examples through them
+- API standardized errors are now fixed to one shared DTO contract with explicit status/code mapping
+- Web reads the same shared error contract through `@dockeradmin/shared`, without local error exceptions
+- Prisma schema now lives in `apps/api/prisma`, and committed migrations are applied through root `pnpm db:migrate`
+- admin seed now runs through `pnpm db:seed`, and password hashes use Node `crypto.scrypt` instead of a third-party native dependency
+- web translations are now organized per locale and per module, with `en` fallback and browser-side persistence
+- MVP web auth now stores the shared `AuthDto` in browser `localStorage`, refreshes on guarded `401` responses, and always clears the local auth session on logout regardless of API logout outcome
+- MVP web routing now uses `react-router-dom` with public `/login`, protected `/`, and auth-aware fallback redirects instead of one auth gate branch inside a single page component
+- access tokens are signed bearer tokens, while refresh tokens are opaque, rotated, and stored hashed at rest
+- Traefik now preserves the `/api` prefix instead of stripping it, and the API exposes `/api/health` explicitly
+- protected runtime routes now use a reusable Fastify auth guard that attaches `currentUser`
+- project metadata CRUD is now live behind the admin guard, and `slug` is generated once on create with numeric suffix collision handling
+- runtime storage paths are now centralized behind one helper module, and project creation eagerly creates `src/repo/deploy` under the configured data root
+- slug policy is now centralized behind one canonical generator and constrained to a compose-safe runtime identifier contract
+- ZIP upload now uses raw binary request bodies, safe yauzl-based extraction, and atomic replace semantics for repeated uploads
+- Git source intake now uses public `https://` URLs only, `git clone --depth 1`, and atomic replace semantics for repeated clones
+- source promotion now uses project-local staged + backup directories, restoring the previous workspace if promotion fails after staging
+- project env content is now stored only as encrypted `env.enc`, and MVP read access returns full decrypted content to `ADMIN` only
+- deploy preflight now has one canonical helper for `sourceType -> workingDir -> compose file` resolution with explicit missing/ambiguous compose errors
+- deploy preflight now also verifies project existence, working source presence, Docker daemon reachability, and env decrypt readiness before any deploy process starts
+- deploy execution is now synchronous, writes a redacted `last-deploy.log`, and runs `docker compose` from inside the API container through the host Docker socket
+- deploy locking is now enforced per project inside the API process, with `409 CONFLICT` for concurrent duplicate deploy requests
+- deploy timeout is now configurable through `DEPLOY_TIMEOUT_MS`, terminates hung processes, and still records `FAILED` plus partial output
+- deployment history now reuses the persisted `Deployment` records and exposes guarded newest-first listing without pagination
+- deploy audit logging now writes safe `DEPLOY_START` / `DEPLOY_FINISH` records without changing deploy runtime outcomes
+- service listing now resolves live Docker Compose containers by `project.slug` and normalizes them into the shared `ServiceDto` contract
+- service identity mapping now uses opaque `serviceId` values and verifies them against the live project runtime before future actions can execute
+- service actions now run through `POST /api/services/:serviceId/action`, support only `start|stop|restart`, return refreshed `ServiceDto` payloads, and write safe best-effort `SERVICE_ACTION` audit records
+- HTTP logs fallback now runs through `GET /api/projects/:id/logs`, requires `serviceName`, defaults `tail` to `200`, verifies service ownership through `project.slug`, and returns `{ serviceName, tail, lines }`
+- WS logs stream now runs through `WS /api/ws/logs`, uses a browser-compatible `accessToken` query param during handshake, sends `snapshot -> line*` frames, and closes with one safe `error` frame on follow failure
+- WS log safety now uses a bounded outbound frame queue, returns `Log stream overloaded` for burst overload, and destroys active upgraded sockets in Fastify `preClose` so shutdown does not hang on live streams
+- metrics endpoint now runs through `GET /api/metrics?projectId=`, returns the shared `MetricsDto[]` contract, and zero-fills stopped or individually failing services instead of failing the whole project response
+- metrics normalization now sorts `MetricsDto[]` by `serviceName`, rounds `cpuPercent` to 2 decimals, and returns memory/network fields as non-negative integer byte counts
+- web metrics polling now uses a placeholder metrics card with stored `projectId` + `accessToken`, polls about every 5 seconds, uses `http://localhost:3001` under Vite dev, and stops polling on unmount
+- domains CRUD now runs through guarded `POST/GET/DELETE /api/domains`, persists bindings in PostgreSQL, and leaves only SSL resolver wiring for the next infrastructure slice
+- domains validation now normalizes FQDN hosts, enforces `port` bounds, rejects duplicate hosts with `409`, and verifies `serviceName` against the live runtime before persisting a binding
+- domain route generation now rewrites `infra/traefik/dynamic/routes.yml` from the full DB snapshot through temp file + atomic rename, keeps base `api/web` routers, and currently targets `http://host.docker.internal:<port>`
+- Traefik static startup now runs through `infra/traefik/entrypoint.sh`, enables ACME `http-01`, defaults DEV to the staging CA via `TRAEFIK_ACME_STAGING=true`, and adds `tls.certResolver: letsencrypt` to generated routers only when `tlsEnabled=true`
+
+### Deferred decisions
+- registry/CI publishing відкладено за межі `E0-2`
+
+---
+
+## 6) Current architecture reality
+### Implemented
+- [x] monorepo bootstrap
+- [x] postgres
+- [x] traefik
+- [x] prisma
+- [x] standardized API error contract
+- [x] seed admin
+- [x] auth
+- [x] projects CRUD
+- [x] runtime storage layout
+- [x] slug / runtime identity
+- [x] zip source
+- [x] git source
+- [x] source replace policy
+- [x] env encryption
+- [x] deploy engine
+- [x] services listing
+- [x] service actions / control
+- [x] logs (HTTP + WS)
+- [x] deploy locking
+- [x] deploy timeout handling
+- [x] deployment history
+- [x] metrics
+- [x] domains
+- [ ] telegram notifications
+- [ ] web ui
+- [x] modular web i18n baseline
+- [x] audit log
+- [ ] ci
+
+### Not implemented yet
+- all P0 runtime features beyond the slices already listed above
+
+---
+
+## 7) Testing notes
+### Manual smoke checks
+- `pnpm dev`
+- expected result: `apps/web` starts on `http://localhost:5173` and `apps/api` listens on `http://localhost:3001`
+- `pnpm --filter @dockeradmin/shared test`
+- expected result: shared DTO schemas parse representative payloads for all required contract groups and canonical API error mappings
+- `pnpm --filter @dockeradmin/web test`
+- expected result: locale resolution, modular translation lookup, stored locale fallback, and metrics polling controller coverage pass for `en`, `uk`, and `ru`
+- `pnpm test:api`
+- expected result: config bootstrap tests pass, `/api/contracts/*` routes validate request/response, auth runtime routes pass `login/refresh/logout/me`, project CRUD coverage passes, runtime path helpers are covered, compose file resolution rules are covered, deploy preflight rules are covered, deploy endpoint coverage passes, standalone notifier plus deploy-linked Telegram notification coverage pass, timeout-specific deploy tests stay green, and metrics normalization coverage stays green
+- `pnpm db:generate`
+- expected result: Prisma client is generated from `apps/api/prisma/schema.prisma`
+- `pnpm db:migrate`
+- expected result: local Docker PostgreSQL gets the committed initial migration and required tables
+- `pnpm db:seed`
+- expected result: admin user is created once for `SEED_ADMIN_EMAIL` and stored with a non-plaintext password hash
+- `pnpm docker:platform:config`
+- expected result: compose config renders successfully for `api`, `web`, `postgres`, `traefik`
+- `pnpm docker:platform:up`
+- expected result: `dockeradmin-api-1`, `dockeradmin-web-1`, `dockeradmin-postgres-1`, `dockeradmin-traefik-1` build and start successfully
+- `POST http://localhost/api/auth/login`
+- expected result: seeded admin receives `accessToken + refreshToken`
+- `GET http://localhost/api/me`
+- expected result: valid bearer token returns the current admin user
+- `POST http://localhost/api/auth/refresh`
+- expected result: refresh token rotates and old token becomes invalid
+- `POST http://localhost/api/auth/logout`
+- expected result: current refresh token is revoked and cannot be reused
+- `GET http://localhost/api/me` without bearer token
+- expected result: standardized `401 UNAUTHORIZED` with message `Authentication required`
+- `POST http://localhost/api/projects`
+- expected result: valid admin bearer token creates project metadata with generated `slug`
+- `POST http://localhost/api/projects/:id/deploy`
+- expected result: valid admin bearer token creates a `Deployment` record, runs `docker compose -p <slug> up -d --build`, writes `deploy/last-deploy.log`, returns final `SUCCESS|FAILED` status without leaking secrets, and sends one best-effort Telegram notification when configured
+- `GET http://localhost/api/projects/:id/deployments`
+- expected result: valid admin bearer token receives `DeploymentDto[]` in newest-first order, while an existing project with no deploys returns `[]`
+- parallel `POST http://localhost/api/projects/:id/deploy` for the same project
+- expected result: one request proceeds, the second gets standardized `409 CONFLICT`, and the next deploy works again after the first finishes
+- `POST http://localhost/api/projects/:id/deploy` with a deliberately low `DEPLOY_TIMEOUT_MS` and a slow compose workload
+- expected result: deploy returns final `FAILED`, `deploy/last-deploy.log` keeps partial output plus the timeout message, and the next deploy can start again
+- `GET http://localhost/api/projects`
+- expected result: valid admin bearer token returns created project metadata list
+- `GET http://localhost/api/projects/:id`
+- expected result: valid admin bearer token returns one project or standardized `404`
+- `PATCH http://localhost/api/projects/:id`
+- expected result: valid admin bearer token updates `name` while keeping `slug` stable
+- `POST http://localhost/api/projects` with punctuation-heavy or accented `name`
+- expected result: API generates a lowercase compose-safe slug, applies numeric suffixes on collision, and keeps that slug stable on rename
+- `POST http://localhost/api/projects/:id/source/zip`
+- expected result: valid admin bearer token uploads a safe ZIP archive and extracts files into `data/projects/{id}/src`
+- `POST http://localhost/api/projects/:id/source/zip` with traversal, symlink, special file, or oversized archive
+- expected result: standardized readable `422` and no unsafe files written under the project runtime root
+- repeated `POST http://localhost/api/projects/:id/source/zip`
+- expected result: old `src/` workspace is atomically replaced by the new one
+- repeated `POST http://localhost/api/projects/:id/source/zip` when the new extract fails
+- expected result: previous working `src/` workspace remains intact and project-local temp dirs are cleaned
+- `POST http://localhost/api/projects/:id/source/git`
+- expected result: valid admin bearer token clones a public `https://` repository into `data/projects/{id}/repo`
+- `POST http://localhost/api/projects/:id/source/git` with non-https URL or broken repository
+- expected result: standardized readable `422` and no partially promoted repo workspace
+- repeated `POST http://localhost/api/projects/:id/source/git`
+- expected result: old `repo/` workspace is atomically replaced by the new clone
+- repeated `POST http://localhost/api/projects/:id/source/git` when the new clone fails
+- expected result: previous working `repo/` workspace remains intact and project-local temp dirs are cleaned
+- `PUT http://localhost/api/projects/:id/env`
+- expected result: valid admin bearer token stores encrypted env content in `env.enc` and never writes plaintext `.env`
+- `GET http://localhost/api/projects/:id/env`
+- expected result: valid admin bearer token receives the original decrypted content, while missing env returns standardized `404`
+- `GET http://localhost/api/projects/:id/logs?serviceName=<name>&tail=<n>`
+- expected result: valid admin bearer token receives `{ serviceName, tail, lines }` only for a service that belongs to that project runtime
+- `WS ws://localhost/api/ws/logs?projectId=<id>&serviceName=<name>&tail=<n>&accessToken=<token>`
+- expected result: valid admin token receives one `snapshot` frame followed by `line` frames, while disconnect stops only that follower
+- `WS ws://localhost/api/ws/logs?projectId=<id>&serviceName=<name>&tail=<n>&accessToken=<invalid>`
+- expected result: invalid or expired token is rejected before upgrade with standardized `401`
+- one active `WS /api/ws/logs` stream plus a synthetic high-volume log burst
+- expected result: the stream returns one safe overload error frame and closes instead of growing the process unboundedly
+- `GET http://localhost/api/metrics?projectId=<id>`
+- expected result: valid admin bearer token receives `MetricsDto[]` sorted by `serviceName`, with `cpuPercent` rounded to 2 decimals and memory/network values normalized to non-negative integer byte counts
+- one stopped or stats-failing service inside `GET /api/metrics?projectId=<id>`
+- expected result: that service is zero-filled while the overall metrics response still returns `200`
+- `POST http://localhost/api/domains`
+- expected result: valid admin bearer token creates one validated domain binding and returns the created `DomainDto`, while invalid host/port returns standardized `422`, duplicate host returns standardized `409`, missing project returns standardized `404`, and missing runtime service returns standardized `404`
+- `GET http://localhost/api/domains`
+- expected result: valid admin bearer token receives the current bare `DomainDto[]` snapshot in DB order
+- `DELETE http://localhost/api/domains/:id`
+- expected result: valid admin bearer token deletes one existing binding with `204`, while a missing binding returns standardized `404`
+- `sed -n '1,220p' infra/traefik/dynamic/routes.yml`
+- expected result: the file keeps base `api/web` routers and reflects the current full DB snapshot of domain host routes without stale deleted hosts
+- `docker compose --env-file .env -f infra/docker-compose.platform.yml exec -T traefik sh -lc 'sed -n "1,220p" /tmp/traefik.generated.yml'`
+- expected result: static config includes `certificatesResolvers.letsencrypt.acme`, `httpChallenge.entryPoint: web`, and the staging CA while `TRAEFIK_ACME_STAGING=true`
+- `http://localhost` or `http://localhost:5173` metrics card with saved `projectId` + `accessToken`
+- expected result: the card shows loading/error state, refreshes metrics about every 5 seconds, and stops polling after page unmount or tab close
+- `docker compose exec -T api sh -lc 'ls -la /app/data/projects/<id>'`
+- expected result: newly created project has `src`, `repo`, and `deploy` directories inside the API runtime volume
+- `docker compose exec -T api sh -lc 'grep -F "<secret>" /app/data/projects/<id>/env.enc'`
+- expected result: `env.enc` exists but does not contain plaintext secret values
+
+### Known failing scenarios
+- нема зафіксованих known-failing сценаріїв для поточного завершеного baseline
+
+---
+
+## 8) Environment / local run notes
+### Minimum required env
+- `DATABASE_URL`
+- `JWT_ACCESS_SECRET`
+- `JWT_REFRESH_SECRET`
+- `ENV_ENCRYPTION_KEY`
+- optional: `DEPLOY_TIMEOUT_MS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+- docker/dev overrides: `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `TRAEFIK_DASHBOARD_PORT`
+
+### Useful commands
+- `pnpm install`
+- `pnpm dev`
+- `pnpm lint`
+- `pnpm test:api`
+- `pnpm db:generate`
+- `pnpm db:migrate`
+- `pnpm db:seed`
+- `pnpm typecheck`
+- `pnpm build`
+- `pnpm docker:platform:config`
+- `pnpm docker:platform:up`
+- `pnpm docker:platform:down`
+
+---
+
+## 9) Handoff notes
+### For next session / next engineer
+- `E0-2` завершений: stack піднято як `dockeradmin-*`
+- `E0-4` завершений: API fail-fast без critical env, Docker stack стартує з root `.env`
+- `E1-1` завершений: shared DTO baseline is live and API imports it directly
+- `E1-2` завершений: controlled API errors are standardized to `{ error: { code, message } }` across `401/403/404/409/422/500`
+- `E2-1` завершений: Prisma schema baseline and initial migration are committed and `pnpm db:migrate` applies them successfully
+- `E2-2` завершений: `pnpm db:seed` creates one admin user and stores a `scrypt` password hash
+- `E2-3` завершений: auth endpoints are live, refresh rotation works, and `/api/*` survives Traefik routing intact
+- `E2-5` завершений: reusable auth guard exists and `GET /api/me` is protected by bearer auth
+- `E3-1` завершений: project metadata CRUD is live in Docker and guarded by the same admin auth flow
+- `E0-3` завершений: runtime path helpers exist, Docker persists `/app/data`, and project creation eagerly creates `src/repo/deploy`
+- `E3-2` завершений: project slugs are centralized, compose-safe, unique, and stable on rename
+- `E3-3` завершений: ZIP source intake safely extracts into `/app/data/projects/<id>/src`
+- `E3-4` завершений: public Git clone works as `--depth 1` into `/app/data/projects/<id>/repo`
+- `E3-5` завершений: repeated ZIP/Git source updates atomically replace the previous workspace
+- `E3-6` завершений: `PUT /api/projects/:id/env` stores only encrypted `env.enc` with no plaintext disk writes
+- `E3-7` завершений: `GET /api/projects/:id/env` returns full decrypted content to `ADMIN` only
+- `E4-1` завершений: deploy-prep helper deterministically resolves `src|repo` and exactly one supported root compose file
+- `E4-2` завершений: preflight now checks project/source/compose/docker/env readiness before any deploy process exists
+- `E4-3` завершений: deploy endpoint persists `RUNNING -> SUCCESS|FAILED`, writes `last-deploy.log`, and executes `docker compose -p <slug> up -d --build`
+- `E4-4` завершений: per-project deploy locking rejects concurrent duplicates with standardized `409 CONFLICT`
+- `E4-5` завершений: deploy timeout is configurable, timed-out runs become `FAILED`, partial output is preserved, and lock release still works
+- `E4-6` завершений: guarded `GET /api/projects/:id/deployments` returns newest-first deployment history with the existing `DeploymentDto` contract
+- `E4-7` завершений: deploy lifecycle now writes safe `DEPLOY_START` / `DEPLOY_FINISH` audit records without leaking deploy output or secrets
+- `E5-1` завершений: guarded `GET /api/projects/:id/services` lists live project runtime services from Docker via `project.slug`
+- `E5-2` завершений: service identity mapping now uses opaque `serviceId` values verified back against the live runtime
+- `E5-3` завершений: `POST /api/services/:serviceId/action` supports `start|stop|restart` and writes safe `SERVICE_ACTION` audit records
+- `E6-1` завершений: guarded `GET /api/projects/:id/logs?serviceName=&tail=` returns verified service logs with a sane default tail
+- `E6-2` завершений: guarded `WS /api/ws/logs?projectId=&serviceName=&tail=&accessToken=` sends a snapshot first, then live log lines, and cleans up the Docker follower on disconnect
+- `E6-3` завершений: WS logs now reject invalid access tokens, bound queued outbound frames, emit a safe overload error on burst pressure, and stop active followers during app shutdown
+- `E7-1` завершений: guarded `GET /api/metrics?projectId=` returns project runtime metrics, with zero-filled partial failures instead of whole-endpoint failure
+- `E7-2` завершений: metrics output is now ordered by `serviceName`, `cpuPercent` is rounded to 2 decimals, and memory/network values are normalized into integer bytes
+- `E7-3` завершений: placeholder web now polls the guarded metrics endpoint about every 5 seconds, shows loading/error state, and stops polling on unmount
+- `E8-1` завершений: guarded `POST /api/domains`, `GET /api/domains`, and `DELETE /api/domains/:id` now persist basic domain bindings in PostgreSQL behind the existing admin auth guard
+- `E8-2` завершений: domain host is now normalized as a valid FQDN, `port` is constrained to `1..65535`, duplicate hosts return standardized `409`, and missing runtime services return standardized `404`
+- `E8-3` завершений: successful domain create/delete now regenerate `infra/traefik/dynamic/routes.yml` from the full DB snapshot through temp file + atomic rename, and generated services currently target `http://host.docker.internal:<port>`
+- `E8-4` завершений: Traefik now boots through a generated static config with ACME `http-01`, a DEV staging toggle, and generated domain routers add `tls.certResolver: letsencrypt` only for `tlsEnabled=true`
+- `E9-1` завершений: standalone Telegram notifier service exists, consumes the existing optional token/chat env config, and safely returns `sent|disabled|failed` without throwing notifier transport failures
+- `E9-2` завершений: deploy now emits one plain Telegram `SUCCESS|FAILED` notification after the final persisted result, while notifier-disabled paths only log a safe warning and never change the deploy response
+- web i18n baseline завершений: locale files live in `apps/web/src/lang/{en,uk,ru}` and the current language is switchable from the settings card
+- `E10-1` завершений: web now has a real login screen, persisted MVP auth session, refresh-on-401 token rotation for guarded metrics calls, and best-effort logout cleanup
+- `E10-2` завершений: web now uses public `/login`, protected `/`, auth-aware fallback redirects, and explicit navigation back to `/login` after logout or refresh failure
+- `E10-3` завершений: web now exposes protected `/projects`, guarded list loading, localized create flow UI, and second-step ZIP/Git source intake against the existing backend endpoints
+- `E10-4` завершений: web now exposes protected nested project detail routes, guarded header loading through `GET /api/projects/:id`, and stable tab URLs for `Services|Logs|Domains|Deployments|Env`
+- verification після `E10-4`: `test`, `lint`, `typecheck`, `build`, `http://localhost/api/health`, і `http://localhost:8080/api/health` зелені; browser smoke через Playwright не стартував через Chromium sandbox under root
+- `E10-5` завершений: `Env` tab now loads guarded env content, treats missing env as a blank saveable editor, and persists updates through `PUT /api/projects/:id/env`
+- verification після `E10-5`: `test`, `lint`, `typecheck`, `build`, `http://localhost/api/health`, і `http://localhost:8080/api/health` зелені
+- `E10-6` завершений: `Deployments` tab now loads guarded deployment history, shows latest status, renders compact recent deploy records, and triggers manual deploy through the existing backend endpoint
+- verification після `E10-6`: `test`, `lint`, `typecheck`, `build`, `http://localhost/api/health`, і `http://localhost:8080/api/health` зелені
+- `E10-7` завершений: `Services` tab now shows runtime inventory with row actions, `Logs` tab now loads an HTTP snapshot plus live websocket frames, and `Domains` tab now supports guarded list/create/delete flows inside `project detail`
+- verification після `E10-7`: `test`, `lint`, `typecheck`, `build`, `http://localhost/api/health`, і `http://localhost:8080/api/health` зелені
+- `E11-1` завершений: backend now writes safe best-effort audit records for auth login success/fail, logout, project create/update, ZIP upload, Git clone, env update, and domain create/delete, while keeping existing deploy and service-action audit entries intact
+- verification після `E11-1`: `pnpm --filter @dockeradmin/api test`, `lint`, `typecheck`, `build`, `pnpm docker:platform:up`, `http://localhost/api/health`, і `http://localhost:8080/api/health` зелені
+- `E11-2` завершений: backend now exposes guarded `GET /api/audit?limit=` with shared audit DTOs, newest-first ordering, and bounded limit control
+- verification після `E11-2`: `pnpm --filter @dockeradmin/shared test`, `lint`, `typecheck`, `build`; `pnpm --filter @dockeradmin/api test`, `lint`, `typecheck`, `build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost:8080/api/health` зелені
+- `E11-3` завершений: backend now applies baseline security headers to API responses, enforces exact-match `WEB_ORIGIN` CORS, and handles allowed/disallowed preflight requests centrally
+- verification після `E11-3`: `pnpm --filter @dockeradmin/api test`, `lint`, `typecheck`, `build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost:8080/api/health`; live `curl` smoke confirmed allowed-origin `Access-Control-Allow-Origin`, allowed `OPTIONS` preflight `204`, and disallowed-origin `403`
+- `E11-4` завершений: API now enforces a `1 MiB` default request body limit, preserves the raw ZIP upload route's dedicated `10 MiB` limit, and returns distinct standardized `422` messages for generic oversized bodies vs oversized ZIP uploads
+- verification після `E11-4`: `pnpm --filter @dockeradmin/api test`, `lint`, `typecheck`, `build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost:8080/api/health`; live oversized-body `curl` to `/api/contracts/auth/login` returned `422 VALIDATION_ERROR` with the generic body-limit message
+- `E12-1` завершений: GitHub Actions now has a `pull_request` CI workflow that installs dependencies on `Node 24` + `pnpm 10.6.0`, then runs root `lint`, root `typecheck`, and package tests for `shared`, `api`, and `web`
+- verification після `E12-1`: `node --test scripts/ci-workflow.test.mjs`; `pnpm lint`; `pnpm typecheck`; `pnpm --filter @dockeradmin/shared test`; `pnpm --filter @dockeradmin/api test`; `pnpm --filter @dockeradmin/web test` зелені
+- `E12-2` завершений: the PR CI workflow now has a separate `build` job with `needs: checks`, and it runs root `pnpm build` so API and Web builds are validated explicitly instead of relying only on `typecheck`
+- verification після `E12-2`: `node --test scripts/ci-workflow.test.mjs`; `pnpm build` зелені
+- `E12-3` завершений: the PR CI workflow now has a separate `infra-smoke` job with `needs: build`, bootstraps `.env` from `.env.example`, and runs `pnpm docker:platform:config`, `pnpm db:validate`, `pnpm db:generate`, and `pnpm db:migrate`
+- verification після `E12-3`: `node --test scripts/ci-workflow.test.mjs`; `pnpm docker:platform:config`; `pnpm db:validate`; `pnpm db:generate`; `pnpm db:migrate` зелені
+- post-roadmap audit UX завершений: web now exposes a protected `/audit` route, dedicated guarded audit helper, sidebar entry, and a read-only newest-first audit table with loading, empty, and error states
+- verification після post-roadmap audit UX: `pnpm --filter @dockeradmin/web test`, `lint`, `typecheck`, `build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost:8080/api/health` зелені
+- post-roadmap audit filters/search завершений: web now supports client-side search, exact action/entity filters, and URL-persisted `/audit` query state without backend changes
+- verification після post-roadmap audit filters/search: `pnpm --filter @dockeradmin/web test`; `pnpm --filter @dockeradmin/web lint`; `pnpm --filter @dockeradmin/web typecheck`; `pnpm --filter @dockeradmin/web build` зелені
+- post-roadmap audit detail drawer завершений: web now opens a right-side read-only record drawer from visible audit rows and keeps the selected audit id in the `/audit` query string
+- verification після post-roadmap audit detail drawer: `pnpm --filter @dockeradmin/web test`; `pnpm --filter @dockeradmin/web lint`; `pnpm --filter @dockeradmin/web typecheck`; `pnpm --filter @dockeradmin/web build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost` зелені
+- post-roadmap audit pagination завершений: backend audit list now supports server-backed `page/pageSize/q/action/entityType`, shared paginated response metadata, and newest-first normalized pages, while web now exposes URL-persisted numbered pagination with page-scoped detail drawer behavior
+- verification після post-roadmap audit pagination і повторного Docker rebuild: `pnpm --filter @dockeradmin/shared test`; `pnpm --filter @dockeradmin/api test -- src/audit/repository.test.ts src/audit/service.test.ts src/audit/endpoints.test.ts`; `pnpm --filter @dockeradmin/web test`; `pnpm lint`; `pnpm typecheck`; `pnpm build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost` зелені
+- post-roadmap audit export завершений: backend now exposes guarded `GET /api/audit/export` CSV output for all rows matching current `q/action/entityType`, while web now exposes an `Export CSV` action that reuses the current server-side audit filters/search
+- verification після post-roadmap audit export: `pnpm --filter @dockeradmin/api test -- src/audit/repository.test.ts src/audit/service.test.ts src/audit/endpoints.test.ts`; `pnpm --filter @dockeradmin/web test`; `pnpm lint`; `pnpm typecheck`; `pnpm build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost`; `http://localhost/api/audit/export` без токена повертає `401` зелені
+- post-roadmap release automation завершений: GitHub Actions now has a default-branch-only manual release workflow that reruns verify gates, syncs workspace versions, creates `chore(release): vX.Y.Z`, tags `vX.Y.Z`, and opens a draft GitHub Release
+- verification після post-roadmap release automation: `node --test scripts/ci-workflow.test.mjs scripts/release-workflow.test.mjs scripts/release-version.test.mjs`; `pnpm lint`; `pnpm typecheck`; `pnpm build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost` зелені
+- post-roadmap GHCR image publishing завершений: the manual release workflow now publishes immutable `ghcr.io/<owner>/dockeradmin-api:vX.Y.Z` and `ghcr.io/<owner>/dockeradmin-web:vX.Y.Z` images before pushing the release commit/tag and opening the draft GitHub Release
+- verification після post-roadmap GHCR image publishing: `node --test scripts/ci-workflow.test.mjs scripts/release-workflow.test.mjs scripts/release-version.test.mjs scripts/release-images.test.mjs`; `pnpm lint`; `pnpm typecheck`; `pnpm build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost` зелені
+- post-roadmap runtime GHCR image consumption завершений: repo now includes `infra/docker-compose.runtime.yml` plus root `docker:runtime:*` scripts for consuming explicit published `api` and `web` images without changing the existing build-based dev compose path
+- verification після post-roadmap runtime GHCR image consumption: `node --test scripts/runtime-compose.test.mjs`; `pnpm lint`; `pnpm typecheck`; `pnpm build`; `pnpm docker:platform:up`; `GHCR_OWNER=dockeradminorg IMAGE_TAG=v0.2.0 pnpm docker:runtime:config`; `http://localhost/api/health`; `http://localhost` зелені
+- post-roadmap deploy-linked release automation завершений: the manual release workflow now supports an explicit `deploy_runtime` gate, performs an SSH-based runtime rollout through `infra/docker-compose.runtime.yml`, and creates the draft GitHub Release only after the rollout succeeds when deploy is requested
+- verification після post-roadmap deploy-linked release automation: `node --test scripts/ci-workflow.test.mjs scripts/release-workflow.test.mjs scripts/release-version.test.mjs scripts/release-images.test.mjs`; `pnpm lint`; `pnpm typecheck`; `pnpm build`; `pnpm docker:platform:up`; `http://localhost/api/health`; `http://localhost` зелені
+- current roadmap in `docs/mvp/ISSUES.md` is complete through `E12-3`; next batch is not defined yet beyond deploy-linked release automation
+- не змінювати Docker packaging без прямої причини; воно вже проходить smoke
+
+### Important references
+- `docs/mvp/SCOPE.md`
+- `docs/mvp/ISSUES.md`
+- `docs/ARCHITECTURE.md`
+- `docs/plans/2026-03-18-e0-1-monorepo-scaffold-design.md`
+- `docs/plans/2026-03-18-e0-2-docker-packaging-design.md`
+- `docs/plans/2026-03-18-e0-4-env-bootstrap-design.md`
+- `docs/plans/2026-03-18-e1-1-shared-dto-design.md`
+- `docs/plans/2026-03-18-e1-2-standard-error-contract-design.md`
+- `docs/plans/2026-03-19-e2-1-prisma-schema-migrations-design.md`
+- `docs/plans/2026-03-19-e2-2-seed-admin-design.md`
+- `docs/plans/2026-03-19-e2-3-auth-endpoints-design.md`
+- `docs/plans/2026-03-19-e2-5-minimal-auth-guard-design.md`
+- `docs/plans/2026-03-19-e0-3-runtime-storage-layout-design.md`
+- `docs/plans/2026-03-19-e3-1-projects-crud-design.md`
+- `docs/plans/2026-03-19-e3-2-project-slug-runtime-identity-design.md`
+- `docs/plans/2026-03-19-e3-3-zip-upload-safe-extract-design.md`
+- `docs/plans/2026-03-19-e3-4-public-git-clone-design.md`
+- `docs/plans/2026-03-19-e3-5-source-workspace-replace-policy-design.md`
+- `docs/plans/2026-03-19-e3-6-env-store-design.md`
+- `docs/plans/2026-03-19-e3-7-env-read-policy-design.md`
+- `docs/plans/2026-03-19-e4-1-compose-validation-design.md`
+- `docs/plans/2026-03-19-e4-2-deploy-preflight-design.md`
+- `docs/plans/2026-03-19-e4-3-deploy-endpoint-design.md`
+- `docs/plans/2026-03-19-e4-4-deploy-locking-design.md`
+- `docs/plans/2026-03-19-e4-5-deploy-timeout-handling-design.md`
+- `docs/plans/2026-03-19-e4-6-deployments-list-history-design.md`
+- `docs/plans/2026-03-23-e11-1-auditlog-sensitive-actions-design.md`
+- `docs/plans/2026-03-23-e11-2-audit-api-design.md`
+- `docs/plans/2026-03-23-e11-3-security-headers-cors-baseline-design.md`
+- `docs/plans/2026-03-23-e11-4-input-upload-limits-design.md`
+- `docs/plans/2026-03-23-e12-1-github-actions-lint-typecheck-test-design.md`
+- `docs/plans/2026-03-23-e12-2-build-validation-design.md`
+- `docs/plans/2026-03-23-e12-3-infra-compose-smoke-design.md`
+- `docs/plans/2026-03-23-post-roadmap-audit-ux-web-design.md`
+- `docs/plans/2026-03-24-post-roadmap-audit-filters-search-design.md`
+- `docs/plans/2026-03-24-post-roadmap-audit-detail-drawer-design.md`
+- `docs/plans/2026-03-20-e7-1-metrics-endpoint-design.md`
+- `docs/plans/2026-03-20-e7-2-metrics-normalization-design.md`
+- `docs/plans/2026-03-20-e7-3-web-polling-for-metrics-design.md`
+- `docs/plans/2026-03-20-e8-1-domains-crud-design.md`
+- `docs/plans/2026-03-20-e8-2-domain-validation-collision-checks-design.md`
+- `docs/plans/2026-03-20-e8-3-generate-traefik-routes-from-db-design.md`
+- `docs/plans/2026-03-20-e8-4-ssl-resolver-wiring-design.md`
+- `docs/plans/2026-03-20-e9-1-telegram-notifier-service-design.md`
+- `docs/plans/2026-03-20-e9-2-deploy-success-fail-notifications-design.md`
+- `docs/plans/2026-03-19-web-i18n-modular-design.md`
+- `docs/plans/2026-03-23-e10-1-login-page-token-handling-design.md`
+- `docs/plans/2026-03-23-e10-2-protected-routes-session-restore-design.md`
+- `docs/plans/2026-03-23-e10-3-projects-list-create-design.md`
+- `docs/plans/2026-03-23-e10-4-project-detail-shell-design.md`
+- `docs/plans/2026-03-23-e10-5-project-env-editor-design.md`
+- `docs/plans/2026-03-23-e10-6-deploy-panel-status-design.md`
+- `docs/plans/2026-03-23-e10-7-services-logs-domains-tabs-design.md`
+- `docs/plans/2026-03-25-post-roadmap-release-automation-design.md`
+- `docs/plans/2026-03-25-post-roadmap-ghcr-publish-design.md`
+- `docs/plans/2026-03-25-post-roadmap-runtime-consume-ghcr-images-design.md`
+- `docs/plans/2026-03-25-post-roadmap-deploy-linked-release-automation-design.md`

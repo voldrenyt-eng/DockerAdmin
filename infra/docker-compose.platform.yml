@@ -1,0 +1,94 @@
+name: dockeradmin
+
+services:
+  traefik:
+    image: traefik:v3.3
+    entrypoint:
+      - /bin/sh
+      - /etc/traefik/entrypoint.sh
+    environment:
+      TRAEFIK_ACME_EMAIL: ${TRAEFIK_ACME_EMAIL:-admin@example.com}
+      TRAEFIK_ACME_STAGING: ${TRAEFIK_ACME_STAGING:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "80:80"
+      - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-18080}:8080"
+    volumes:
+      - ./traefik/entrypoint.sh:/etc/traefik/entrypoint.sh:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      - traefik-acme:/etc/traefik/acme
+    depends_on:
+      api:
+        condition: service_started
+      web:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dockeradmin}
+      POSTGRES_USER: ${POSTGRES_USER:-dockeradmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dockeradmin-dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-dockeradmin} -d ${POSTGRES_DB:-dockeradmin}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      DATA_ROOT: /app/data
+      DEPLOY_TIMEOUT_MS: ${DEPLOY_TIMEOUT_MS:-300000}
+      ENV_ENCRYPTION_KEY: ${ENV_ENCRYPTION_KEY:?ENV_ENCRYPTION_KEY is required}
+      HOST: 0.0.0.0
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+      NODE_ENV: development
+      PORT: 3001
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+    volumes:
+      - runtime-data:/app/data
+      - ./traefik/dynamic:/app/infra/traefik/dynamic
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O - http://127.0.0.1:3001/health >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O - http://127.0.0.1/ >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  runtime-data:
+  traefik-acme:

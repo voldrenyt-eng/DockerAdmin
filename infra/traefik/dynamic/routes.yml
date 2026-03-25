@@ -1,0 +1,26 @@
+http:
+  routers:
+    api:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api`) || Path(`/health`)"
+      service: api-service
+      priority: 20
+
+    web:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/`)"
+      service: web-service
+      priority: 1
+
+  services:
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://api:3001"
+
+    web-service:
+      loadBalancer:
+        servers:
+          - url: "http://web:80"

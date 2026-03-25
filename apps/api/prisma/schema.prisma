@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+}
+
+enum ProjectSourceType {
+  ZIP
+  GIT
+}
+
+enum DeploymentStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum DeploymentSource {
+  ZIP
+  GIT
+  MANUAL
+}
+
+enum DeploymentTrigger {
+  MANUAL
+  SYSTEM
+}
+
+enum AuditAction {
+  AUTH_LOGIN
+  AUTH_LOGOUT
+  AUTH_REFRESH
+  PROJECT_CREATE
+  PROJECT_UPDATE
+  SOURCE_UPLOAD
+  SOURCE_CLONE
+  ENV_UPDATE
+  DEPLOY_START
+  DEPLOY_FINISH
+  DOMAIN_UPSERT
+  SERVICE_ACTION
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  role          UserRole       @default(ADMIN)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Project {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  sourceType  ProjectSourceType @map("source_type")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  deployments Deployment[]
+  domains     Domain[]
+  auditLogs   AuditLog[]
+
+  @@map("projects")
+}
+
+model Deployment {
+  id         String            @id @default(cuid())
+  projectId  String            @map("project_id")
+  status     DeploymentStatus
+  source     DeploymentSource
+  trigger    DeploymentTrigger
+  startedAt  DateTime          @default(now()) @map("started_at")
+  finishedAt DateTime?         @map("finished_at")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, startedAt])
+  @@map("deployments")
+}
+
+model Domain {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  host        String   @unique
+  serviceName String   @map("service_name")
+  port        Int
+  tlsEnabled  Boolean  @default(false) @map("tls_enabled")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("domains")
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  userId     String?   @map("user_id")
+  projectId  String?   @map("project_id")
+  action     AuditAction
+  entityType String    @map("entity_type")
+  entityId   String?   @map("entity_id")
+  message    String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

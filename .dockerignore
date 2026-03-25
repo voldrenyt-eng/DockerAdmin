@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+.turbo
+dist
+coverage
+data
+.git
+docs
+.env
+.env.*
+!.env.example

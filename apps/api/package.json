@@ -1,0 +1,36 @@
+{
+  "name": "@dockeradmin/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:seed": "prisma generate --schema prisma/schema.prisma && tsx prisma/seed.ts",
+    "dev": "tsx watch src/index.ts",
+    "lint": "biome check src package.json tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "tsx --test src/config.test.ts src/contracts.test.ts src/errors.test.ts src/limits.test.ts src/security.test.ts src/prisma-baseline.test.ts src/seed-admin-baseline.test.ts src/audit/repository.test.ts src/audit/service.test.ts src/audit/endpoints.test.ts src/auth/password.test.ts src/auth/guard.test.ts src/auth/endpoints.test.ts src/projects.test.ts src/projects/slug.test.ts src/domains.test.ts src/domains/routes.test.ts src/domains/service.test.ts src/env.test.ts src/notifier/service.test.ts src/metrics.test.ts src/metrics/service.test.ts src/metrics/runtime.test.ts src/logs.test.ts src/logs/service.test.ts src/logs/runtime.test.ts src/logs/ws.test.ts src/services.test.ts src/services/identity.test.ts src/services/service.test.ts src/services/runtime.test.ts src/source/git.test.ts src/source/zip.test.ts src/runtime/paths.test.ts src/deploy/compose.test.ts src/deploy/preflight.test.ts src/deploy/endpoints.test.ts src/deploy/runner.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@dockeradmin/shared": "workspace:*",
+    "@prisma/client": "^6.5.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "yauzl": "^3.2.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.13.10",
+    "@types/yauzl": "^2.10.3",
+    "@types/yazl": "^3.3.0",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "yazl": "^3.3.1"
+  }
+}
