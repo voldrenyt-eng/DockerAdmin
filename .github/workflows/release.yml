@@ -23,7 +23,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_VERSION: ${{ github.event.inputs.version }}
     outputs:
       ghcr_owner: ${{ steps.release_metadata.outputs.ghcr_owner }}
       release_version: ${{ steps.release_metadata.outputs.release_version }}
@@ -153,7 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - release
-    if: ${{ inputs.deploy_runtime }}
+    if: ${{ github.event.inputs.deploy_runtime == 'true' }}
     env:
       GHCR_OWNER: ${{ needs.release.outputs.ghcr_owner }}
       RELEASE_VERSION: ${{ needs.release.outputs.release_version }}
@@ -192,7 +192,7 @@ jobs:
     needs:
       - release
       - deploy_runtime
-    if: ${{ always() && needs.release.result == 'success' && (!inputs.deploy_runtime || needs.deploy_runtime.result == 'success') }}
+    if: ${{ always() && needs.release.result == 'success' && (github.event.inputs.deploy_runtime != 'true' || needs.deploy_runtime.result == 'success') }}
     env:
       GITHUB_TOKEN: ${{ github.token }}
       RELEASE_VERSION: ${{ needs.release.outputs.release_version }}
