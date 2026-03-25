@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare CI env
+        run: cp .env.example .env
+
       - name: Generate Prisma client
         run: pnpm db:generate
 
@@ -69,6 +72,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Prepare CI env
+        run: cp .env.example .env
 
       - name: Generate Prisma client
         run: pnpm db:generate
