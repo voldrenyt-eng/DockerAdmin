@@ -10,6 +10,7 @@ test("GitHub Actions CI workflow exists and runs pull_request lint/typecheck/tes
   assert.match(workflow, /^\s*node-version:\s*24\s*$/m);
   assert.match(workflow, /^\s*version:\s*10\.6\.0\s*$/m);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
+  assert.match(workflow, /pnpm db:generate/);
   assert.match(workflow, /pnpm lint/);
   assert.match(workflow, /pnpm typecheck/);
   assert.match(workflow, /pnpm --filter @dockeradmin\/shared test/);

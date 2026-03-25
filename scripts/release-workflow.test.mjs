@@ -22,6 +22,7 @@ test("GitHub Actions release workflow is serialized, writes contents, and guards
   assert.match(workflow, /^\s*fetch-depth:\s*0\s*$/m);
   assert.match(workflow, /github\.event\.repository\.default_branch/);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
+  assert.match(workflow, /pnpm db:generate/);
   assert.match(workflow, /pnpm lint/);
   assert.match(workflow, /pnpm typecheck/);
   assert.match(workflow, /pnpm --filter @dockeradmin\/shared test/);
