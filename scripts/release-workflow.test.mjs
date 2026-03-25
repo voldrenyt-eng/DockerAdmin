@@ -41,7 +41,7 @@ test("GitHub Actions release workflow bumps versions, creates git release artifa
   assert.match(workflow, /dockeradmin-api/);
   assert.match(workflow, /dockeradmin-web/);
   assert.match(workflow, /chore\(release\): v/);
-  assert.match(workflow, /git tag v/);
+  assert.match(workflow, /git tag "?v/);
   assert.match(workflow, /^\s*deploy_runtime:\s*$/m);
   assert.match(workflow, /^\s*draft_release:\s*$/m);
   assert.match(workflow, /gh release create/);

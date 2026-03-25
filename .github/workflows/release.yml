@@ -106,10 +106,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Commit release version bump
-        run: git commit --all -m "chore(release): v${RELEASE_VERSION}"
+        run: 'git commit --all -m "chore(release): v${RELEASE_VERSION}"'
 
       - name: Create release tag
-        run: git tag v${RELEASE_VERSION}
+        run: git tag "v${RELEASE_VERSION}"
 
       - name: Authenticate to GHCR
         uses: docker/login-action@v3
@@ -147,7 +147,7 @@ jobs:
       - name: Push release commit and tag
         run: |
           git push origin HEAD:${GITHUB_REF_NAME}
-          git push origin v${RELEASE_VERSION}
+          git push origin "v${RELEASE_VERSION}"
 
   deploy_runtime:
     runs-on: ubuntu-latest
@@ -199,4 +199,4 @@ jobs:
 
     steps:
       - name: Create draft GitHub Release
-        run: gh release create v${RELEASE_VERSION} --repo "${GITHUB_REPOSITORY}" --draft --generate-notes --title v${RELEASE_VERSION}
+        run: gh release create "v${RELEASE_VERSION}" --repo "${GITHUB_REPOSITORY}" --draft --generate-notes --title "v${RELEASE_VERSION}"
